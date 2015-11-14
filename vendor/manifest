@@ -1,0 +1,29 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/go-zoo/bone",
+			"repository": "https://github.com/go-zoo/bone",
+			"revision": "861b03028e1b30a532649b69bded364b410b7f71",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/gorilla/context",
+			"repository": "https://github.com/gorilla/context",
+			"revision": "1c83b3eabd45b6d76072b66b746c20815fb2872d",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/gorilla/mux",
+			"repository": "https://github.com/gorilla/mux",
+			"revision": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/julienschmidt/httprouter",
+			"repository": "https://github.com/julienschmidt/httprouter",
+			"revision": "77a895ad01ebc98a4dc95d8355bc825ce80a56f6",
+			"branch": "master"
+		}
+	]
+}
