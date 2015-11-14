@@ -2,6 +2,13 @@
 	"version": 0,
 	"dependencies": [
 		{
+			"importpath": "code.google.com/p/go-uuid/uuid",
+			"repository": "https://code.google.com/p/go-uuid",
+			"revision": "35bc42037350",
+			"branch": "default",
+			"path": "/uuid"
+		},
+		{
 			"importpath": "github.com/boltdb/bolt",
 			"repository": "https://github.com/boltdb/bolt",
 			"revision": "0b00effdd7a8270ebd91c24297e51643e370dd52",
