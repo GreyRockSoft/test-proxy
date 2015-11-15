@@ -18,8 +18,23 @@ type ProxyIteraction struct {
 	IteractionType string    `json:"type"`
 	Path           string    `json:"path"`
 	Payload        string    `json:"payload"`
-	Size           uint32    `json:"size"`
+	Size           int64     `json:"size"`
 	StatusCode     uint32    `json:"statusCode"`
+	Range          string    `json:"range"`
+}
+
+func (p *ProxyIteraction) IsReturnEarly() bool {
+	return p.IteractionType == "returnEarly"
+}
+
+func (p *ProxyIteraction) MatchRequest(request *http.Request) bool {
+	if p.Path != "" {
+		requestRange := request.Header.Get("Range")
+
+		return requestRange == p.Range
+	}
+
+	return false
 }
 
 type proxyAdminServer struct {
@@ -74,7 +89,13 @@ func (p *proxyAdminServer) NewProxyIteraction(response http.ResponseWriter, requ
 		return
 	}
 	err = p.Db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists([]byte("Proxies"))
+		proxyBucket, err := tx.CreateBucketIfNotExists([]byte("Proxies"))
+
+		if err != nil {
+			return fmt.Errorf("create bucket %s", err)
+		}
+
+		idBucket, err := tx.CreateBucketIfNotExists([]byte("IdMapper"))
 
 		if err != nil {
 			return fmt.Errorf("create bucket %s", err)
@@ -88,7 +109,13 @@ func (p *proxyAdminServer) NewProxyIteraction(response http.ResponseWriter, requ
 			return err
 		}
 
-		err = b.Put([]byte(proxy.Id), buf)
+		err = proxyBucket.Put([]byte(proxy.Id), buf)
+
+		if err != nil {
+			return err
+		}
+
+		err = idBucket.Put([]byte(proxy.Path), []byte(proxy.Id))
 
 		return err
 	})
@@ -141,7 +168,47 @@ func writeHeaders(writer http.ResponseWriter, response *http.Response) {
 }
 
 func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.Request) {
-	log.Printf("Proxying request to: %s\n", request.Host)
+	log.Printf("Proxying request to: %s%s\n", request.Host, request.URL.Path)
+
+	var iteraction ProxyIteraction
+
+	err := p.Db.View(func(tx *bolt.Tx) error {
+		idBucket := tx.Bucket([]byte("IdMapper"))
+		if idBucket == nil {
+			return nil
+		}
+		id := idBucket.Get([]byte(request.URL.Path))
+
+		if id == nil {
+			return nil
+		}
+
+		proxyBucket := tx.Bucket([]byte("Proxies"))
+
+		if proxyBucket == nil {
+			return nil
+		}
+
+		value := proxyBucket.Get(id)
+
+		if value == nil {
+			return nil
+		}
+
+		err := json.Unmarshal(value, &iteraction)
+
+		return err
+	})
+
+	if err != nil {
+		writeError(response, 500, err)
+		return
+	}
+
+	if iteraction.MatchRequest(request) {
+		log.Printf("Found matching proxy iteraction of type %s\n", iteraction.IteractionType)
+	}
+
 	request.URL.Host = request.Host
 	request.RequestURI = ""
 
@@ -159,7 +226,12 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 		writeHeaders(response, clientResponse)
 		response.WriteHeader(clientResponse.StatusCode)
 
-		io.Copy(response, clientResponse.Body)
+		if iteraction.MatchRequest(request) && iteraction.IsReturnEarly() {
+			log.Printf("Will return early from the response\n")
+			io.CopyN(response, clientResponse.Body, iteraction.Size)
+		} else {
+			io.Copy(response, clientResponse.Body)
+		}
 
 		if err != nil {
 			log.Printf("ERROR - %s\n", err.Error())
