@@ -21,6 +21,7 @@ type ProxyIteraction struct {
 	Size           int64     `json:"size"`
 	StatusCode     uint32    `json:"statusCode"`
 	Range          string    `json:"range"`
+	Method         string    `json:"method"`
 }
 
 func (p *ProxyIteraction) IsReturnEarly() bool {
@@ -29,6 +30,11 @@ func (p *ProxyIteraction) IsReturnEarly() bool {
 
 func (p *ProxyIteraction) MatchRequest(request *http.Request) bool {
 	if p.Path != "" {
+
+		if request.Method != p.Method {
+			return false
+		}
+
 		requestRange := request.Header.Get("Range")
 
 		return requestRange == p.Range
@@ -168,7 +174,11 @@ func writeHeaders(writer http.ResponseWriter, response *http.Response) {
 }
 
 func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.Request) {
-	log.Printf("Proxying request to: %s%s\n", request.Host, request.URL.Path)
+	requestId := uuid.NewRandom()
+	log.Printf("Request: %s | Method: %s | Proxying request to: %s%s\n", requestId.String(), request.Method, request.Host, request.URL.Path)
+	if request.Header.Get("Range") != "" {
+		log.Printf("Request: %s | Request has a range of %s\n", requestId.String(), request.Header.Get("Range"))
+	}
 
 	var iteraction ProxyIteraction
 
@@ -206,7 +216,7 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 	}
 
 	if iteraction.MatchRequest(request) {
-		log.Printf("Found matching proxy iteraction of type %s\n", iteraction.IteractionType)
+		log.Printf("Request: %s | Found matching proxy iteraction of type %s\n", requestId.String(), iteraction.IteractionType)
 	}
 
 	request.URL.Host = request.Host
@@ -219,7 +229,7 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 	clientResponse, err := p.Client.Do(request)
 
 	if err != nil {
-		log.Printf("ERROR - %s\n", err.Error())
+		log.Printf("Request: %s | ERROR - %s\n", requestId.String(), err.Error())
 		response.WriteHeader(500)
 	} else {
 		// write over the headers then the response, then the body
@@ -227,7 +237,7 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 		response.WriteHeader(clientResponse.StatusCode)
 
 		if iteraction.MatchRequest(request) && iteraction.IsReturnEarly() {
-			log.Printf("Will return early from the response\n")
+			log.Printf("Request: %s | Will return early from the response\n", requestId.String())
 			io.CopyN(response, clientResponse.Body, iteraction.Size)
 		} else {
 			io.Copy(response, clientResponse.Body)
@@ -239,6 +249,7 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 	}
 	request.Body.Close()
 	clientResponse.Body.Close()
+	log.Printf("Request: %s | Finished processing request", requestId.String())
 }
 
 func main() {
