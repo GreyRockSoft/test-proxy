@@ -174,6 +174,7 @@ func writeHeaders(writer http.ResponseWriter, response *http.Response) {
 }
 
 func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
 	requestId := uuid.NewRandom()
 	log.Printf("Request: %s | Method: %s | Proxying request to: %s%s\n", requestId.String(), request.Method, request.Host, request.URL.Path)
 	if request.Header.Get("Range") != "" {
@@ -227,7 +228,7 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 	}
 
 	clientResponse, err := p.Client.Do(request)
-
+	defer clientResponse.Body.Close()
 	if err != nil {
 		log.Printf("Request: %s | ERROR - %s\n", requestId.String(), err.Error())
 		response.WriteHeader(500)
@@ -247,8 +248,8 @@ func (p *proxyServer) ProxyHandler(response http.ResponseWriter, request *http.R
 			log.Printf("ERROR - %s\n", err.Error())
 		}
 	}
-	request.Body.Close()
-	clientResponse.Body.Close()
+	
+	
 	log.Printf("Request: %s | Finished processing request", requestId.String())
 }
 
