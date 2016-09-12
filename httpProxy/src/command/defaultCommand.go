@@ -32,8 +32,8 @@ func (defaultCommand *DefaultCommand) Execute(responseWriter http.ResponseWriter
 
 	defer response.Body.Close()
 
-	responseWriter.WriteHeader(response.StatusCode)
 	writeHeaders(responseWriter, response)
+	responseWriter.WriteHeader(response.StatusCode)
 
 	io.Copy(responseWriter, response.Body)
 

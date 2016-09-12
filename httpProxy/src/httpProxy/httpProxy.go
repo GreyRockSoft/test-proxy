@@ -29,9 +29,10 @@ func main() {
 	go listenOnAdminPort()
 
 	listenOnProxyPort(func () {
-		fmt.Printf("Listening on proxy port %s and admin port %s\n",
+		fmt.Printf("Listening on proxy port %s and admin port %s and forwarding to %s\n",
 			httpClientClientConnectionInfo.proxyPort,
-			httpClientClientConnectionInfo.adminPort)
+			httpClientClientConnectionInfo.adminPort,
+            httpClientClientConnectionInfo.remoteHost)
 	})
 }
 
