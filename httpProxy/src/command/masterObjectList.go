@@ -14,7 +14,7 @@ type Node struct {
 }
 
 type Nodes struct {
-    Node []Node
+    Node []*Node
 }
 
 type Object struct {
@@ -74,8 +74,7 @@ func (masterObjectList *MasterObjectList) SetNodesEndpoint(endPoint string) {
     }
 
     for _, node := range masterObjectList.Nodes.Node {
-        ptrToNode := &node
-        ptrToNode.EndPoint = endPoint
+        node.EndPoint = endPoint
     }
 }
 
@@ -85,8 +84,7 @@ func (masterObjectList *MasterObjectList) SetNodesHttpPort(httpPort string) {
     }
 
     for _, node := range masterObjectList.Nodes.Node {
-        ptrToNode := &node
-        ptrToNode.HttpPort = httpPort
+        node.HttpPort = httpPort
     }
 }
 

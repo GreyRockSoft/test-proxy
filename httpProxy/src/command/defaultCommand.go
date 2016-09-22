@@ -44,39 +44,8 @@ func (defaultCommand *DefaultCommand) Execute(responseWriter http.ResponseWriter
     }
 
     if IsMasterObjectListXml(string(responseBody)) {
-        masterObjectList := NewMasterObjectList(responseBody)
-
-        if masterObjectList != nil {
-            masterObjectList.SetNodesEndpoint(proxyInfo.IpAddress())
-            masterObjectList.SetNodesHttpPort(proxyInfo.HttpPort())
-
-            for _, node := range masterObjectList.Nodes.Node {
-                fmt.Printf("%+v", node)
-            }
-
-            var newResponseBody []byte
-
-            newResponseBody, err = xml.Marshal(masterObjectList)
-
-            if err != nil {
-                fmt.Println("Error marshaling new master object list: ", err)
-            } else {
-                const contentLengthKeyName = "Content-Length"
-                response.Header.Set(contentLengthKeyName, strconv.Itoa(len(newResponseBody)))
-
-                fmt.Println(contentLengthKeyName, "; ", response.Header.Get(contentLengthKeyName), " Original response body size: ", len(responseBody),
-                    " New response body  size: ", len(newResponseBody));
-
-                responseBody = newResponseBody
-
-
-
-                fmt.Println("--> ", contentLengthKeyName, "; ", response.Header.Get(contentLengthKeyName), " Original response body size: ", len(responseBody),
-                    " New response body  size: ", len(newResponseBody));
-            }
-        }
+        responseBody = generateResponseBody(responseBody, response)
     }
-
 
 	writeHeaders(responseWriter, response)
 	responseWriter.WriteHeader(response.StatusCode)
@@ -92,41 +61,31 @@ func writeHeaders(responseWriter http.ResponseWriter, response *http.Response) {
 	}
 }
 
-func writeResponseBody(responseWriter http.ResponseWriter, response *http.Response) {
-    responseBody, err := ioutil.ReadAll(response.Body)
-    if err != nil {
-        fmt.Println("Error reading response body: ", err)
-        return
-    }
+func generateResponseBody(originalResponseBody []byte, response *http.Response) []byte {
+    result := originalResponseBody
 
-    shouldWriteOriginalResponseBody := true
+    masterObjectList := NewMasterObjectList(originalResponseBody)
 
-    responseBodyString := string(responseBody)
+    if masterObjectList != nil {
+        masterObjectList.SetNodesEndpoint(proxyInfo.IpAddress())
+        masterObjectList.SetNodesHttpPort(proxyInfo.HttpPort())
 
-    if IsMasterObjectListXml(responseBodyString) {
-        masterObjectList := NewMasterObjectList(responseBody)
+        for _, node := range masterObjectList.Nodes.Node {
+            fmt.Printf("%+v", node)
+        }
 
-        if masterObjectList != nil {
-            masterObjectList.SetNodesEndpoint(proxyInfo.IpAddress())
-            masterObjectList.SetNodesHttpPort(proxyInfo.HttpPort())
+        var newResponseBody []byte
 
-            // fmt.Printf("%+v", masterObjectList)
+        newResponseBody, err := xml.Marshal(masterObjectList)
 
-            var newResponseBody []byte
+        if err != nil {
+            fmt.Println("Error marshaling new master object list: ", err)
+        } else {
+            response.Header.Set("Content-Length", strconv.Itoa(len(newResponseBody)))
 
-            newResponseBody, err = xml.Marshal(masterObjectList)
-
-            if err == nil {
-                fmt.Println("newResponseBody size: ", len(newResponseBody))
-                responseWriter.Write(newResponseBody)
-                shouldWriteOriginalResponseBody = false
-            } else {
-                fmt.Println("Error marshaling new master object list: ", err)
-            }
+            result = newResponseBody
         }
     }
 
-    if shouldWriteOriginalResponseBody {
-        responseWriter.Write(responseBody)
-    }
+    return result
 }

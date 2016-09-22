@@ -12,6 +12,7 @@ func (failAlwaysCommand *FailAlwaysCommand) Execute(responseWriter http.Response
 	responseWriter.WriteHeader(http.StatusInternalServerError)
 	err = nil; handled = true
 	log.Println("Preventing attempt to put: ", request.RequestURI)
+
 	return
 }
 
