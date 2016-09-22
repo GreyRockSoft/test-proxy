@@ -15,11 +15,11 @@ func (failFirstAttemptCommand *FailFirstAttemptCommand) Execute(responseWriter h
 	if failFirstAttemptCommand.numRetries == 1 {
 		responseWriter.WriteHeader(http.StatusInternalServerError)
 		err = nil; handled = true
-		log.Println("Preventing attempt to put: ", request.RequestURI)
+		log.Println("Preventing attempt to ", request.Method, ": ", request.RequestURI)
 		return
 	}
 
-	log.Println("Allowing attempt to put: ", request.RequestURI)
+	log.Println("Allowing attempt to to ", request.Method, ": ", request.RequestURI)
 
 	err = nil; handled = false
 	return

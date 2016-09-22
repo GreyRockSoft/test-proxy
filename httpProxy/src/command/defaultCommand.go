@@ -70,10 +70,6 @@ func generateResponseBody(originalResponseBody []byte, response *http.Response) 
         masterObjectList.SetNodesEndpoint(proxyInfo.IpAddress())
         masterObjectList.SetNodesHttpPort(proxyInfo.HttpPort())
 
-        for _, node := range masterObjectList.Nodes.Node {
-            fmt.Printf("%+v", node)
-        }
-
         var newResponseBody []byte
 
         newResponseBody, err := xml.Marshal(masterObjectList)
