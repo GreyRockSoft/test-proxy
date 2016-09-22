@@ -15,10 +15,13 @@ type urlPrefixCommandEntry struct {
 var urlPrefixCommandTable []urlPrefixCommandEntry
 
 var failFirstCommand command.FailFirstAttemptCommand
+var failAlwaysCommand command.FailAlwaysCommand
 
 func init() {
 	urlPrefixCommandTable = append(urlPrefixCommandTable,
 		urlPrefixCommandEntry{"/Put_Job_Management_Test/lesmis-copies.txt", http.MethodPut, &failFirstCommand})
+	urlPrefixCommandTable = append(urlPrefixCommandTable,
+		urlPrefixCommandEntry{"/Get_Job_Management_Test/lesmis-copies.txt", http.MethodGet, &failAlwaysCommand})
 }
 
 func CommandForUrlPrefix(urlPrefix string, httpVerb string) command.Command  {
