@@ -7,15 +7,10 @@ import (
 	"net"
 	"command"
 	"fmt"
+    "config"
 )
 
-type ds3HttpClientConnectionInfo struct {
-	remoteHost string
-	proxyPort  string
-	adminPort  string
-}
-
-var httpClientClientConnectionInfo ds3HttpClientConnectionInfo
+var httpClientClientConnectionInfo config.Ds3HttpClientConnectionInfo
 var httpListener net.Listener
 var defaultCommand command.DefaultCommand
 
@@ -24,22 +19,22 @@ var defaultCommand command.DefaultCommand
 func main() {
 	getDs3ConnectionInfoFromEnvironmentVars()
 
-	defaultCommand = command.DefaultCommand{RemoteHost:httpClientClientConnectionInfo.remoteHost}
+	defaultCommand = command.DefaultCommand{RemoteHost:httpClientClientConnectionInfo.RemoteHost}
 
 	go listenOnAdminPort()
 
 	listenOnProxyPort(func () {
 		fmt.Printf("Listening on proxy port %s and admin port %s and forwarding to %s\n",
-			httpClientClientConnectionInfo.proxyPort,
-			httpClientClientConnectionInfo.adminPort,
-            httpClientClientConnectionInfo.remoteHost)
+			httpClientClientConnectionInfo.ProxyPort,
+			httpClientClientConnectionInfo.AdminPort,
+            httpClientClientConnectionInfo.RemoteHost)
 	})
 }
 
 func getDs3ConnectionInfoFromEnvironmentVars() {
-	httpClientClientConnectionInfo.remoteHost = getEnvironmentVar("DS3_TARGET_SYSTEM_DNS_NAME", "sm2u-11.eng.sldomain.com")
-	httpClientClientConnectionInfo.proxyPort = getEnvironmentVar("HTTP_PROXY_PORT", ":9080")
-	httpClientClientConnectionInfo.adminPort = getEnvironmentVar("HTTP_PROXY_ADMIN_PORT", ":9090")
+	httpClientClientConnectionInfo.RemoteHost = getEnvironmentVar("DS3_TARGET_SYSTEM_DNS_NAME", "sm2u-11.eng.sldomain.com")
+	httpClientClientConnectionInfo.ProxyPort = getEnvironmentVar("HTTP_PROXY_PORT", ":9080")
+	httpClientClientConnectionInfo.AdminPort = getEnvironmentVar("HTTP_PROXY_ADMIN_PORT", ":9090")
 }
 
 func getEnvironmentVar(envVarToLookFor string, defaultIfVarNotSet string) string {
@@ -56,10 +51,10 @@ func listenOnAdminPort() {
 	adminMux := http.NewServeMux()
 	adminMux.HandleFunc("/close", finit)
 
-	err := http.ListenAndServe(httpClientClientConnectionInfo.adminPort, adminMux)
+	err := http.ListenAndServe(httpClientClientConnectionInfo.AdminPort, adminMux)
 
 	if err != nil {
-		fmt.Printf("Error listening on admin port: %s\n", httpClientClientConnectionInfo.adminPort)
+		fmt.Printf("Error listening on admin port: %s\n", httpClientClientConnectionInfo.AdminPort)
 		panic(err)
 	}
 }
@@ -67,10 +62,10 @@ func listenOnAdminPort() {
 func listenOnProxyPort(onSuccess func()) {
 	var err error
 
-	httpListener, err = net.Listen("tcp", httpClientClientConnectionInfo.proxyPort)
+	httpListener, err = net.Listen("tcp", httpClientClientConnectionInfo.ProxyPort)
 
 	if err != nil {
-		fmt.Printf("Error listening on port: %s\n", httpClientClientConnectionInfo.proxyPort)
+		fmt.Printf("Error listening on port: %s\n", httpClientClientConnectionInfo.ProxyPort)
 		panic(err)
 	}
 
@@ -86,7 +81,11 @@ var commandToRun command.Command
 func proxyHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
-	commandToRun = CommandForUrlPrefix(request.RequestURI, request.Method)
+    log.Println("Processing ", request.Method, ": ", request.RequestURI)
+    log.Println("  Request header: ", request.Header)
+    log.Println("  Request body: ", request.Body)
+
+	commandToRun = config.CommandForUrlPrefix(request.RequestURI, request.Method, &httpClientClientConnectionInfo)
 
 	if commandToRun != nil {
 		err, handled := commandToRun.Execute(responseWriter, request)

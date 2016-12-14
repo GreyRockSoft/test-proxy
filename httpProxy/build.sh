@@ -8,5 +8,5 @@ docker build -t spectralogic/sdk_proxy:latest .
 # docker tag 2aacb1b2635b spectralogic/sdk_proxy:latest
 # docker login <creds>
 # docker push spectralogic/sdk_proxy:latest
-
+# curl -X PUT http://localhost:9090/close
 
