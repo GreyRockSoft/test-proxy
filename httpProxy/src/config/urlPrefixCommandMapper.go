@@ -18,19 +18,31 @@ func CommandForUrlPrefix(url string, httpVerb string, ds3HttpClientConnectionInf
     if strings.HasPrefix(url, "/Put_Job_Management_Test/lesmis-copies.txt") && httpVerb == http.MethodPut {
         return &command.FailFirstAttemptCommand{}
     } else if strings.HasPrefix(url, "/Get_Job_Management_Test/lesmis-copies.txt") && httpVerb == http.MethodGet {
-        var partialDataFromGetCommand *command.PartialDataFromGetCommand
-
-        partialDataFromGetCommand = findGetJobManagementUrlCommandEntry(url, httpVerb)
-
-        if partialDataFromGetCommand == nil {
-            partialDataFromGetCommand = &command.PartialDataFromGetCommand{RemoteHost:ds3HttpClientConnectionInfo.RemoteHost}
-            urlCommandEntryTable = append(urlCommandEntryTable, urlCommandEntry{url, httpVerb, partialDataFromGetCommand})
-        }
-
-        return partialDataFromGetCommand
+        const maxNunRetries int = 1
+        return getPartialDataFromGetCommand(url, httpVerb, ds3HttpClientConnectionInfo, maxNunRetries)
+    } else if strings.HasPrefix(url, "/Get_Job_Management_Test/GreatExpectations.txt") && httpVerb == http.MethodGet {
+        const maxNunRetries int = 2
+        return getPartialDataFromGetCommand(url, httpVerb, ds3HttpClientConnectionInfo, maxNunRetries)
     }
 
     return nil
+}
+
+func getPartialDataFromGetCommand(url string,
+                                  httpVerb string,
+                                  ds3HttpClientConnectionInfo *Ds3HttpClientConnectionInfo,
+                                  maxNumRetries int) *command.PartialDataFromGetCommand {
+    var partialDataFromGetCommand *command.PartialDataFromGetCommand
+
+    partialDataFromGetCommand = findGetJobManagementUrlCommandEntry(url, httpVerb)
+
+    if partialDataFromGetCommand == nil {
+        partialDataFromGetCommand = &command.PartialDataFromGetCommand{RemoteHost:ds3HttpClientConnectionInfo.RemoteHost,
+            MaxNumRetries: maxNumRetries}
+        urlCommandEntryTable = append(urlCommandEntryTable, urlCommandEntry{url, httpVerb, partialDataFromGetCommand})
+    }
+
+    return partialDataFromGetCommand
 }
 
 func findGetJobManagementUrlCommandEntry(url string, httpVerb string) *command.PartialDataFromGetCommand {

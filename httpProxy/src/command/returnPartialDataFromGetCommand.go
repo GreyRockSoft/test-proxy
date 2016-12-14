@@ -5,13 +5,13 @@ import (
     "log"
     "strconv"
     "fmt"
-    // "io"
-    "io/ioutil"
+    "io"
 )
 
 type PartialDataFromGetCommand struct {
     RemoteHost string
     numRetries int
+    MaxNumRetries int
 }
 
 func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWriter http.ResponseWriter, request *http.Request) (err error, handled bool) {
@@ -50,7 +50,7 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
 
     partialDataFromGetCommand.numRetries++
 
-    if partialDataFromGetCommand.numRetries == 1 {
+    if partialDataFromGetCommand.numRetries <= partialDataFromGetCommand.MaxNumRetries {
         numBytesToTransfer = contentLen / 4
     } else {
         numBytesToTransfer = contentLen
@@ -62,12 +62,32 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
     responseWriter.Header().Set(contentLengthHeaderId, fmt.Sprintf("%d", contentLen))
     responseWriter.WriteHeader(response.StatusCode)
 
-    dataToTransfer, err := ioutil.ReadAll(response.Body)
+    readBuffer := make([]byte, 1024 * 1024)
+    var totalNumBytesRead int
+    var dataToTransfer []byte
 
-    if err != nil {
-        log.Println(err)
-        return
+    for totalNumBytesRead < numBytesToTransfer {
+        var numBytesRead int
+        numBytesRead, err = response.Body.Read(readBuffer)
+
+        log.Printf("=========>, Num bytes read: %d\n", numBytesRead)
+
+        if err == nil || err == io.EOF {
+            if numBytesRead > 0 {
+                dataToTransfer = append(dataToTransfer, readBuffer[0:numBytesRead]...)
+            }
+
+            if err == io.EOF {
+                break
+            }
+        } else {
+            log.Println(err)
+            return
+        }
+
+        totalNumBytesRead += numBytesRead
     }
+
 
     var numBytesWritten int
 
