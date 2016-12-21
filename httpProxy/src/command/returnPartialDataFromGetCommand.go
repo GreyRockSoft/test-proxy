@@ -65,10 +65,11 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
     readBuffer := make([]byte, 1024 * 1024)
     var totalNumBytesRead int
     var dataToTransfer []byte
+    limitedReader := io.LimitedReader{R : response.Body, N : int64(numBytesToTransfer)}
 
     for totalNumBytesRead < numBytesToTransfer {
         var numBytesRead int
-        numBytesRead, err = response.Body.Read(readBuffer)
+        numBytesRead, err = limitedReader.Read(readBuffer)
 
         log.Printf("=========>, Num bytes read: %d\n", numBytesRead)
 
@@ -87,7 +88,6 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
 
         totalNumBytesRead += numBytesRead
     }
-
 
     var numBytesWritten int
 
