@@ -37,6 +37,9 @@ func (defaultCommand *DefaultCommand) Execute(responseWriter http.ResponseWriter
 
 	io.Copy(responseWriter, response.Body)
 
+	fmt.Println("  Response header: ", response.Header)
+	fmt.Println("  Response body: ", response.Body)
+
 	return
 }
 
