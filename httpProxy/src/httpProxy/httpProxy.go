@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"log"
 	"net/http"
 	"net"
 	"command"
@@ -81,9 +80,9 @@ var commandToRun command.Command
 func proxyHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
-    log.Println("Processing ", request.Method, ": ", request.RequestURI)
-    log.Println("  Request header: ", request.Header)
-    log.Println("  Request body: ", request.Body)
+    fmt.Println("Processing ", request.Method, ": ", request.RequestURI)
+    fmt.Println("  Request header: ", request.Header)
+    fmt.Println("  Request body: ", request.Body)
 
 	commandToRun = config.CommandForUrlPrefix(request.RequestURI, request.Method, &httpClientClientConnectionInfo)
 
@@ -91,7 +90,7 @@ func proxyHandler(responseWriter http.ResponseWriter, request *http.Request) {
 		err, handled := commandToRun.Execute(responseWriter, request)
 
 		if(err != nil) {
-			log.Println("Error: ", err, " processing http request: ", request);
+			fmt.Println("Error: ", err, " processing http request: ", request);
 		}
 
 		if handled {

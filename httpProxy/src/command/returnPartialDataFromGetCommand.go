@@ -2,7 +2,6 @@ package command
 
 import (
     "net/http"
-    "log"
     "strconv"
     "fmt"
     "io"
@@ -29,7 +28,7 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
     response, err = httpClient.Do(request)
 
     if err != nil {
-        log.Println(err)
+        fmt.Println(err)
         return
     }
 
@@ -40,11 +39,11 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
     contentLen, err := strconv.Atoi(response.Header.Get(contentLengthHeaderId))
 
     if err != nil {
-        log.Println(err)
+        fmt.Println(err)
         return
     }
 
-    log.Printf("=========>, Http request content length: %d\n", contentLen)
+    fmt.Printf("=========>, Http request content length: %d\n", contentLen)
 
     var numBytesToTransfer int
 
@@ -56,7 +55,7 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
         numBytesToTransfer = contentLen
     }
 
-    log.Printf("=========>, Content length we will return: %d\n", numBytesToTransfer)
+    fmt.Printf("=========>, Content length we will return: %d\n", numBytesToTransfer)
 
     writeHeaders(responseWriter, response)
     responseWriter.Header().Set(contentLengthHeaderId, fmt.Sprintf("%d", contentLen))
@@ -71,7 +70,7 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
         var numBytesRead int
         numBytesRead, err = limitedReader.Read(readBuffer)
 
-        log.Printf("=========>, Num bytes read: %d\n", numBytesRead)
+        fmt.Printf("=========>, Num bytes read: %d\n", numBytesRead)
 
         if err == nil || err == io.EOF {
             if numBytesRead > 0 {
@@ -82,7 +81,7 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
                 break
             }
         } else {
-            log.Println(err)
+            fmt.Println(err)
             return
         }
 
@@ -94,16 +93,16 @@ func (partialDataFromGetCommand *PartialDataFromGetCommand) Execute(responseWrit
     numBytesWritten, err = responseWriter.Write(dataToTransfer)
 
     if err != nil {
-        log.Println(err)
+        fmt.Println(err)
         return
     }
 
     if numBytesWritten != len(dataToTransfer) {
-        log.Printf("numBytesWritten: %d, data length: %d\n", numBytesWritten, len(dataToTransfer))
+        fmt.Printf("numBytesWritten: %d, data length: %d\n", numBytesWritten, len(dataToTransfer))
     }
 
-    log.Println("  Response header: ", response.Header)
-    log.Println("  Response body: ", response.Body)
+    fmt.Println("  Response header: ", response.Header)
+    fmt.Println("  Response body: ", response.Body)
 
     return
 }
