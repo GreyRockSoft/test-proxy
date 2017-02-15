@@ -13,10 +13,11 @@ type urlCommandEntry struct {
 }
 
 var urlCommandEntryTable []urlCommandEntry
+var failFirstAttemptCommand = command.FailFirstAttemptCommand{}
 
 func CommandForUrlPrefix(url string, httpVerb string, ds3HttpClientConnectionInfo *Ds3HttpClientConnectionInfo) command.Command {
     if strings.HasPrefix(url, "/Put_Job_Management_Test/lesmis-copies.txt") && httpVerb == http.MethodPut {
-        return &command.FailFirstAttemptCommand{}
+        return &failFirstAttemptCommand
     } else if strings.HasPrefix(url, "/Get_Job_Management_Test/lesmis-copies.txt") && httpVerb == http.MethodGet {
         const maxNunRetries int = 1
         return getPartialDataFromGetCommand(url, httpVerb, ds3HttpClientConnectionInfo, maxNunRetries)
